@@ -42,14 +42,14 @@ void* DynArray_pushback(DynArray* array, void* data, size_t size) {
 
     if (array->end + size > array->end_buffer) {
         // needs reallocation, reserving extra space for future appends
-        size_t new_capacity = 2 * (size + ARRAY_CAPACITY(array));
+        size_t new_capacity = 2 * (size + ARRAY_SIZE(array));
         DynArray_reserve(array, new_capacity);
     }
     void* dest = array->end;
     if (data != NULL) {
         memcpy(dest, data, size);
     }
-    array->end = dest;
+    array->end = dest + size;
     return dest;
 }
 

@@ -2,26 +2,26 @@
 
 #include <string.h>
 
-FILE* openInput(char const* path) {
+FILE* IO_openIn(char const* path) {
     if (strcmp(path, "stdin") == 0)
         return stdin;
     else
         return fopen(path, "rb");
 }
 
-FILE* openOutput(char const* path) {
+FILE* IO_openOut(char const* path) {
     if (strcmp(path, "stdout") == 0)
         return stdout;
     else
         return fopen(path, "wb");
 }
 
-void closeIO(FILE* file) {
+void IO_close(FILE* file) {
     if (file == stdin || file == stdout) return;
     fclose(file);
 }
 
-bool readLine(FILE* file, DynArray* array) {
+bool IO_readLine(FILE* file, DynArray* array) {
     enum { BUFFER_SIZE = 500 };
     char buffer[BUFFER_SIZE];
     for (;;) {
