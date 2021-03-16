@@ -14,9 +14,14 @@ FILE* IO_openOut(char const* path);
 // Closes a file opened with openIO(). Correctly handles stdin/stdout/stderr.
 void IO_close(FILE* file);
 
-// Reads a line from 'file' and appends it to 'array'.
-// Returns 'true' if a line could be read,
-// 'false' if end-of-file was encountered.
-bool IO_readLine(FILE* file, DynArray* array);
+// Reads a line from 'file' and appends it to 'array' as a null-terminated byte
+// string. The resulting line will end with '\n', except if it is the last line
+// of the file. Returns the number of bytes read from 'file'.
+size_t IO_readLine(FILE* file, DynArray* array);
+
+// Reads a logical line from 'file' and appends it to 'array' as a
+// null-terminated byte string. A logical line is separated by a newline which
+// is NOT preceded by a '\'. Returns the number of bytes read from 'file'.
+size_t IO_readLogicalLine(FILE* file, DynArray* array);
 
 #endif

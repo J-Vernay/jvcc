@@ -60,19 +60,83 @@ def _ptr_destructor(func): # for types deriving from c_void_p
         return c
     return f 
 
+###### StrView.h ######
+
+class StrView(Structure):
+    _fields_ = [("begin",c_void_p), ("size",c_ulonglong)]
+    
+    def __init__(self, string):
+        self.begin = cast(c_char_p(string.encode("utf-8")), c_void_p)
+        self.size = len(string)
+    
+    def __eq__(self, other):
+        if isinstance(other, StrView):
+            return lib.jvstr_equal(self, other)
+        return NotImplemented
+        
+    def __str__(self):
+        return string_at(self.begin, self.size).decode("utf-8")
+        
+def StrView_make(string):
+    return StrView(cast(c_char_p(string), c_void_p), len(string))
+
+
+###### general/DynArray.h ######
 
 @_destructor(lib.DynArray_destroy)
 class DynArray(Structure):
     _fields_ = [("begin",c_void_p), ("end",c_void_p), ("end_buffer",c_void_p)]
 
-@_ptr_destructor(lib.IO_close)
-class CFilePtr(c_void_p):
-    pass # opaque structure
 
 _wrap(DynArray, "DynArray_make", c_ulonglong)
 _wrap(None, "DynArray_destroy", POINTER(DynArray))
+_wrap(c_ulonglong, "DynArray_size", POINTER(DynArray))
 
+
+###### general/IO.h ######
+
+@_ptr_destructor(lib.IO_close)
+class CFilePtr(c_void_p):
+    pass # opaque structure
+    
 _wrap(CFilePtr, "IO_openIn", c_char_p)
 _wrap(CFilePtr, "IO_openOut", c_char_p)
 _wrap(None, "IO_close", CFilePtr)
-_wrap(c_bool, "IO_readLine", CFilePtr, POINTER(DynArray))
+_wrap(c_ulonglong, "IO_readLine", CFilePtr, POINTER(DynArray))
+
+###### cli/diagnostic.h ######
+
+DiagnosticHandler = CFUNCTYPE(None, c_void_p)
+_wrap(None, "setWarningHandler", DiagnosticHandler, c_void_p)
+_wrap(None, "setErrorHandler", DiagnosticHandler, c_void_p)
+_wrap(None, "redirectDiagnostics", CFilePtr)
+
+class DiagnosticStatus(c_int):
+    OK = 0
+    WARNING = 1
+    ERROR = 2
+_WrappedFunction = CFUNCTYPE(None, c_void_p)
+_wrap(DiagnosticStatus, "wrapFuncAndDiagnostic", _WrappedFunction, c_void_p)
+
+def wrapFuncAndDiagnostic(f):
+    f2 = lambda _: f()
+    func = _WrappedFunction(f2)
+    return lib.wrapFuncAndDiagnostic(func, None)
+    
+
+###### c17/PPTokens.h ######
+
+class PPTokenKind(c_int):
+    pass
+
+class PPToken(Structure):
+    _fields_ = [("repr",StrView), ("kind", PPTokenKind)]
+
+    def __str__(self):
+        return f"(\"{self.repr}\", {lib.nameFromPPTokenKind(self.kind).decode('utf-8')})"
+        
+
+_wrap(c_ulonglong, "PPtokenizeLogicalLine", StrView, POINTER(DynArray))
+_wrap(c_int, "checkPPToken", StrView, PPTokenKind)
+_wrap(PPTokenKind, "ppTokenKindFromName", c_char_p)
+_wrap(c_char_p, "nameFromPPTokenKind", PPTokenKind)

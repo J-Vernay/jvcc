@@ -21,31 +21,48 @@ void IO_close(FILE* file) {
     fclose(file);
 }
 
-bool IO_readLine(FILE* file, DynArray* array) {
+size_t IO_readLine(FILE* file, DynArray* array) {
     enum { BUFFER_SIZE = 500 };
     char buffer[BUFFER_SIZE];
+
+    size_t nb_read = 0;
     for (;;) {
-        if (fgets(buffer, BUFFER_SIZE, file) == NULL) return false;
+        if (fgets(buffer, BUFFER_SIZE, file) == NULL) break;
 
         size_t size = strlen(buffer);
+        nb_read += size;
         // size >= 1, because fgets() returns NULL if no bytes read.
-        if (buffer[size - 1] == '\n') {
-            // Found the end of line.
+        if (size < BUFFER_SIZE || buffer[size - 1] == '\n') {
+            // Found either end-of-line or end-of-file.
             // Copying 'size + 1' bytes, which include '\0'.
             DynArray_pushback(array, buffer, size + 1);
-            return true;
-        } else if (size == BUFFER_SIZE - 1) {
+            break;
+        } else {
             // Buffer full before end of line.
             // Copying 'size' bytes, not including '\0'.
             DynArray_pushback(array, buffer, size);
             continue;
-        } else {
-            // Found end-of-file.
-            // TODO: Emit warning because last line did not have '\n'.
-            char* dest = DynArray_pushback(array, NULL, size + 2);
-            memcpy(dest, buffer, size);
-            memcpy(dest + size, "\n", 2);
-            return true;
         }
+    }
+    return nb_read;
+}
+
+size_t IO_readLogicalLine(FILE* file, DynArray* array) {
+    size_t total_read = 0;
+
+    while (true) {
+        size_t nb_read = IO_readLine(file, array);
+        total_read += nb_read;
+
+        // Check if ends with \ + \n
+        if (nb_read >= 2)
+            if ('\n' == ((char*)array->end)[-2] &&
+                '\\' == ((char*)array->end)[-3]) {
+                // escaped newline
+                --array->end;  // removing '\0'
+                continue;
+            }
+        // not escaped newline, returns
+        return total_read;
     }
 }

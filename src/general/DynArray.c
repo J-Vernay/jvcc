@@ -5,10 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define BYTE_SIZE(a, b) ((char const*)(b) - (char const*)(a))
-#define ARRAY_SIZE(a) (size_t) BYTE_SIZE(a->begin, a->end)
-#define ARRAY_CAPACITY(a) (size_t) BYTE_SIZE(a->begin, a->end_buffer)
-
 DynArray DynArray_make(size_t buffer_size) {
     DynArray array = {0};
     DynArray_reserve(&array, buffer_size);
@@ -23,7 +19,7 @@ void DynArray_destroy(DynArray* array) {
 
 void DynArray_reserve(DynArray* array, size_t buffer_size) {
     assert(array != NULL);
-    if (buffer_size < ARRAY_CAPACITY(array)) {
+    if (buffer_size < DynArray_capacity(array)) {
         return;  // already enough space.
     }
     void* newptr = realloc(array->begin, buffer_size);
@@ -32,7 +28,7 @@ void DynArray_reserve(DynArray* array, size_t buffer_size) {
         fputs("Error: no memory available for allocation.", stderr);
         exit(EXIT_FAILURE);
     }
-    array->end = (char*)newptr + ARRAY_SIZE(array);
+    array->end = (char*)newptr + DynArray_size(array);
     array->begin = newptr;
     array->end_buffer = (char*)newptr + buffer_size;
 }
@@ -40,9 +36,9 @@ void DynArray_reserve(DynArray* array, size_t buffer_size) {
 void* DynArray_pushback(DynArray* array, void* data, size_t size) {
     assert(array != NULL);
 
-    if (array->end + size > array->end_buffer) {
+    if (DynArray_size(array) + size > DynArray_capacity(array)) {
         // needs reallocation, reserving extra space for future appends
-        size_t new_capacity = 2 * (size + ARRAY_SIZE(array));
+        size_t new_capacity = 2 * (size + DynArray_size(array));
         DynArray_reserve(array, new_capacity);
     }
     void* dest = array->end;
@@ -57,3 +53,8 @@ void DynArray_popback(DynArray* array, size_t size) {
     assert(array != NULL);
     array->end = (char*)array->end - size;
 }
+
+// Inline functions already defined in DynArray.h, put here to generate external
+// definitions.
+extern size_t DynArray_size(DynArray const* array);
+extern size_t DynArray_capacity(DynArray const* array);

@@ -12,6 +12,9 @@ set(ALL_SOURCES
     
     src/cli/jvcmd.c
     src/cli/main.c
+    src/cli/diagnostic.c
+    
+    src/c17/PPTokens.c
 )
 
 add_executable(jvcc ${ALL_SOURCES})
@@ -19,8 +22,14 @@ target_include_directories(jvcc PUBLIC src)
 target_compile_features(jvcc PUBLIC c_std_11)
 
 # jvcc is also compiled as a shared library to be tested with Python
-add_library(jvcc-shared SHARED ${ALL_SOURCES})
+
+find_package(Python3 COMPONENTS Development)
+
+add_library(jvcc-shared SHARED
+    ${ALL_SOURCES}
+)
 target_include_directories(jvcc-shared PUBLIC src)
+target_link_libraries(jvcc-shared PUBLIC Python3::Python)
 target_compile_features(jvcc-shared PUBLIC c_std_11)
 set_target_properties(jvcc-shared PROPERTIES
     ENABLE_EXPORTS ON

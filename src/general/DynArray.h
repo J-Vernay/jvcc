@@ -34,4 +34,14 @@ void* DynArray_pushback(DynArray* array, void* data, size_t size);
 // Removes the last 'size' bytes of the array.
 void DynArray_popback(DynArray* array, size_t size);
 
+// Returns the size in bytes of the DynArray.
+inline size_t DynArray_size(DynArray const* array) {
+    return ((char*)array->end) - ((char*)array->begin);
+}
+
+// Returns the capacity in bytes of the buffer of the DynArray.
+inline size_t DynArray_capacity(DynArray const* array) {
+    return ((char*)array->end_buffer) - ((char*)array->begin);
+}
+
 #endif
